@@ -8,6 +8,12 @@
     "dev": "nodemon src/server.js",
     "test": "jest --detectOpenHandles --runInBand"
   },
+  "jest": {
+    "testEnvironment": "node",
+    "testEnvironmentOptions": {
+      "customExportConditions": ["node", "node-addons"]
+    }
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/makhfi03/Gestion-de-Flotte-de-Transport-Routier.git"
