@@ -56,7 +56,7 @@ class ChauffeurService {
         const chauffeur = await User.findOneAndUpdate(
             { _id: id, role: 'chauffeur' },
             { statut },
-            { new: true, runValidators: true }
+            { returnDocument: 'after', runValidators: true }
         ).select('-motDePasse');
 
         if (!chauffeur) {
