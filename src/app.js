@@ -4,6 +4,7 @@ const cors = require('cors');
 
 const authRoutes = require('./routes/auth.routes');
 const chauffeurRoutes = require('./routes/chauffeur.routes');
+const camionRoutes = require('./routes/camion.routes');
 const errorHandler = require('./middlewares/error.middleware');
 
 const app = express();
@@ -18,6 +19,7 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/chauffeurs', chauffeurRoutes);
+app.use('/api/camions', camionRoutes);
 
 app.use(errorHandler);
 
