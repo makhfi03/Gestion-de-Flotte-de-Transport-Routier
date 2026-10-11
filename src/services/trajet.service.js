@@ -185,6 +185,53 @@ class TrajetService {
 
         return trajet;
     }
+
+    async getTrajetsForChauffeur(chauffeurId, query = {}) {
+        const filter = { chauffeur: chauffeurId };
+
+        if (query.statut) {
+            filter.statut = query.statut;
+        }
+
+        const page = parseInt(query.page, 10) || 1;
+        const limit = parseInt(query.limit, 10) || 10;
+        const skip = (page - 1) * limit;
+
+        const total = await Trajet.countDocuments(filter);
+        const trajets = await Trajet.find(filter)
+            .populate('camion', 'matricule marque modele')
+            .populate('remorque', 'matricule type capaciteCharge')
+            .sort({ dateDebut: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        return {
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+            trajets
+        };
+    }
+
+    async getTrajetForChauffeurById(chauffeurId, trajetId) {
+        const trajet = await Trajet.findById(trajetId)
+            .populate('camion', 'matricule marque modele')
+            .populate('remorque', 'matricule type capaciteCharge');
+
+        if (!trajet) {
+            const error = new Error('Trajet introuvable.');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        if (trajet.chauffeur.toString() !== chauffeurId.toString()) {
+            const error = new Error('Accès refusé. Ce trajet ne vous est pas assigné.');
+            error.statusCode = 403;
+            throw error;
+        }
+
+        return trajet;
+    }
 }
 
 module.exports = new TrajetService();
