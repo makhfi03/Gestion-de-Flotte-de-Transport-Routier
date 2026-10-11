@@ -57,6 +57,35 @@ class TrajetController {
             next(error);
         }
     }
+
+    async getMyTrajets(req, res, next) {
+        try {
+            const result = await trajetService.getTrajetsForChauffeur(req.user._id, req.query);
+
+            return res.status(200).json({
+                status: 'success',
+                total: result.total,
+                page: result.page,
+                totalPages: result.totalPages,
+                data: result.trajets
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async getMyTrajetById(req, res, next) {
+        try {
+            const trajet = await trajetService.getTrajetForChauffeurById(req.user._id, req.params.id);
+
+            return res.status(200).json({
+                status: 'success',
+                data: trajet
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = new TrajetController();
