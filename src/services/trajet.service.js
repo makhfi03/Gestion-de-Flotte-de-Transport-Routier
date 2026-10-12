@@ -232,6 +232,91 @@ class TrajetService {
 
         return trajet;
     }
+
+    async updateStatut(trajetId, user, { statut, kmDepart, remarques }) {
+        const trajet = await Trajet.findById(trajetId);
+        if (!trajet) {
+            const error = new Error('Trajet introuvable.');
+            error.statusCode = 404;
+            throw error;
+        }
+        
+        const currentUserId = (user._id || user.id).toString();
+        if (user.role === 'chauffeur' && trajet.chauffeur.toString() !== currentUserId) {
+            const error = new Error('Accès refusé. Vous n\'êtes pas le chauffeur assigné à ce trajet.');
+            error.statusCode = 403;
+            throw error;
+        }
+        
+        if (trajet.statut === 'termine' || trajet.statut === 'annule') {
+            const error = new Error(`Impossible de modifier un trajet déjà ${trajet.statut}.`);
+            error.statusCode = 400;
+            throw error;
+        }
+        
+        if (statut === 'annule' && user.role !== 'admin') {
+            const error = new Error('Seul un administrateur peut annuler un trajet.');
+            error.statusCode = 403;
+            throw error;
+        }
+        
+        if (statut === 'en_cours') {
+            if (trajet.statut !== 'cree') {
+                const error = new Error(`Transition invalide : impossible de passer de "${trajet.statut}" à "en_cours".`);
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const camion = await Camion.findById(trajet.camion);
+            if (!camion) {
+                const error = new Error('Camion associé introuvable.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            const departKm = (kmDepart !== undefined && kmDepart !== null) ? kmDepart : camion.kilometrage;
+            if (departKm < camion.kilometrage) {
+                const error = new Error(`Le kilométrage de départ (${departKm} km) ne peut pas être inférieur au kilométrage actuel du camion (${camion.kilometrage} km).`);
+                error.statusCode = 400;
+                throw error;
+            }
+
+            trajet.kmDepart = departKm;
+            trajet.statut = 'en_cours';
+            
+            await Camion.findByIdAndUpdate(trajet.camion, { statut: 'en_mission' });
+            if (trajet.remorque) {
+                await Remorque.findByIdAndUpdate(trajet.remorque, { statut: 'en_mission' });
+            }
+        } else if (statut === 'annule') {
+            if (trajet.statut === 'en_cours') {
+                
+                await Camion.findByIdAndUpdate(trajet.camion, { statut: 'disponible' });
+                if (trajet.remorque) {
+                    await Remorque.findByIdAndUpdate(trajet.remorque, { statut: 'disponible' });
+                }
+            }
+            trajet.statut = 'annule';
+        } else if (statut === 'termine') {
+            if (trajet.statut !== 'en_cours') {
+                const error = new Error('Transition invalide : le trajet doit être "en_cours" pour être terminé.');
+                error.statusCode = 400;
+                throw error;
+            }
+            trajet.statut = 'termine';
+            await Camion.findByIdAndUpdate(trajet.camion, { statut: 'disponible' });
+            if (trajet.remorque) {
+                await Remorque.findByIdAndUpdate(trajet.remorque, { statut: 'disponible' });
+            }
+        }
+
+        if (remarques !== undefined) {
+            trajet.remarques = remarques;
+        }
+
+        await trajet.save();
+        return this.getTrajetById(trajet._id);
+    }
 }
 
 module.exports = new TrajetService();

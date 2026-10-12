@@ -86,6 +86,20 @@ class TrajetController {
             next(error);
         }
     }
+
+    async updateStatut(req, res, next) {
+        try {
+            const trajet = await trajetService.updateStatut(req.params.id, req.user, req.body);
+
+            return res.status(200).json({
+                status: 'success',
+                message: 'Statut du trajet mis à jour avec succès.',
+                data: trajet
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = new TrajetController();

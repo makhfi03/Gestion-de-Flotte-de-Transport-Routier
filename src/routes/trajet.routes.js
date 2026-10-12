@@ -6,7 +6,8 @@ const { authenticate, authorize } = require('../middlewares/auth.middleware');
 const validate = require('../middlewares/validate.middleware');
 const {
     createTrajetSchema,
-    assignerTrajetSchema
+    assignerTrajetSchema,
+    updateStatutTrajetSchema
 } = require('../validations/trajet.validations');
 
 router.use(authenticate);
@@ -16,5 +17,6 @@ router.get('/:id', trajetController.getById);
 
 router.post('/', authorize('admin'), validate(createTrajetSchema), trajetController.create);
 router.put('/:id/assigner', authorize('admin'), validate(assignerTrajetSchema), trajetController.assigner);
+router.patch('/:id/statut', authorize('admin', 'chauffeur'), validate(updateStatutTrajetSchema), trajetController.updateStatut);
 
 module.exports = router;

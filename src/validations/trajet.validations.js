@@ -52,7 +52,20 @@ const assignerTrajetSchema = Joi.object({
     'object.min': 'Veuillez fournir au moins une ressource à réassigner.'
 });
 
+const updateStatutTrajetSchema = Joi.object({
+    statut: Joi.string().valid('en_cours', 'termine', 'annule').required().messages({
+        'any.only': 'Le statut doit être "en_cours", "termine" ou "annule".',
+        'any.required': 'Le champ statut est obligatoire.'
+    }),
+    kmDepart: Joi.number().min(0).optional().messages({
+        'number.base': 'Le kilométrage de départ doit être un nombre.',
+        'number.min': 'Le kilométrage de départ ne peut pas être négatif.'
+    }),
+    remarques: Joi.string().trim().allow('').optional()
+});
+
 module.exports = {
     createTrajetSchema,
-    assignerTrajetSchema
+    assignerTrajetSchema,
+    updateStatutTrajetSchema
 };
