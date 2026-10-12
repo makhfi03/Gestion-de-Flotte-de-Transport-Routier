@@ -1,0 +1,792 @@
+openapi: 3.0.0
+info:
+  title: API Gestion de Flotte de Transport Routier
+  version: 1.0.0
+  description: API REST complète pour la gestion de flotte routière (véhicules, chauffeurs, trajets, maintenance préventive et rapports).
+servers:
+  - url: http://localhost:5000
+    description: Serveur Local de Développement
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - bearerAuth: []
+paths:
+  /api/auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Connexion utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - motDePasse
+              properties:
+                email:
+                  type: string
+                  example: admin@flotte.com
+                motDePasse:
+                  type: string
+                  example: Admin123!
+      responses:
+        '200':
+          description: Connexion réussie
+        '401':
+          description: Identifiants incorrects ou compte suspendu
+
+  /api/auth/refresh:
+    post:
+      tags:
+        - Auth
+      summary: Renouveler un access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Nouveau token généré
+        '401':
+          description: Refresh token invalide
+
+  /api/auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Déconnexion utilisateur
+      responses:
+        '200':
+          description: Déconnexion réussie
+
+  /api/chauffeurs:
+    get:
+      tags:
+        - Chauffeurs
+      summary: Lister les chauffeurs (Admin)
+      parameters:
+        - name: statut
+          in: query
+          schema:
+            type: string
+            enum: [actif, suspendu]
+      responses:
+        '200':
+          description: Liste des chauffeurs
+        '403':
+          description: Accès interdit
+    post:
+      tags:
+        - Chauffeurs
+      summary: Créer un chauffeur (Admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nom
+                - prenom
+                - email
+                - motDePasse
+                - numeroPermis
+              properties:
+                nom:
+                  type: string
+                  example: Alami
+                prenom:
+                  type: string
+                  example: Karim
+                email:
+                  type: string
+                  example: karim.alami@flotte.com
+                motDePasse:
+                  type: string
+                  example: Chauffeur123!
+                telephone:
+                  type: string
+                  example: '0612345678'
+                numeroPermis:
+                  type: string
+                  example: B123456
+      responses:
+        '201':
+          description: Chauffeur créé
+        '400':
+          description: Données invalides ou email déjà pris
+
+  /api/chauffeurs/{id}:
+    get:
+      tags:
+        - Chauffeurs
+      summary: Détails d'un chauffeur par ID (Admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Détails du chauffeur
+        '404':
+          description: Chauffeur introuvable
+
+  /api/chauffeurs/{id}/statut:
+    patch:
+      tags:
+        - Chauffeurs
+      summary: Activer ou suspendre un chauffeur (Admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - statut
+              properties:
+                statut:
+                  type: string
+                  enum: [actif, suspendu]
+      responses:
+        '200':
+          description: Statut mis à jour
+
+  /api/camions:
+    get:
+      tags:
+        - Camions
+      summary: Lister les camions
+      parameters:
+        - name: statut
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Liste des camions
+    post:
+      tags:
+        - Camions
+      summary: Enregistrer un camion (Admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - matricule
+                - marque
+                - modele
+              properties:
+                matricule:
+                  type: string
+                  example: 12345-A-1
+                marque:
+                  type: string
+                  example: Volvo
+                modele:
+                  type: string
+                  example: FH16
+                kilometrage:
+                  type: number
+                  example: 50000
+      responses:
+        '201':
+          description: Camion créé
+        '400':
+          description: Matricule déjà existant
+
+  /api/camions/{id}:
+    get:
+      tags:
+        - Camions
+      summary: Détails d'un camion
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Détails du camion
+        '404':
+          description: Camion introuvable
+    put:
+      tags:
+        - Camions
+      summary: Modifier un camion (Admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                marque:
+                  type: string
+                modele:
+                  type: string
+                kilometrage:
+                  type: number
+      responses:
+        '200':
+          description: Camion modifié
+
+  /api/camions/{id}/archive:
+    patch:
+      tags:
+        - Camions
+      summary: Archiver un camion (Admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Camion archivé
+
+  /api/remorques:
+    get:
+      tags:
+        - Remorques
+      summary: Lister les remorques
+      responses:
+        '200':
+          description: Liste des remorques
+    post:
+      tags:
+        - Remorques
+      summary: Enregistrer une remorque (Admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - matricule
+                - type
+                - capaciteCharge
+              properties:
+                matricule:
+                  type: string
+                  example: REM-1001
+                type:
+                  type: string
+                  enum: [plateau, benne, citerne, frigorifique, porte_conteneur]
+                capaciteCharge:
+                  type: number
+                  example: 25000
+      responses:
+        '201':
+          description: Remorque enregistrée
+
+  /api/remorques/{id}:
+    get:
+      tags:
+        - Remorques
+      summary: Détails d'une remorque
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Détails de la remorque
+    put:
+      tags:
+        - Remorques
+      summary: Modifier une remorque (Admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                capaciteCharge:
+                  type: number
+                type:
+                  type: string
+      responses:
+        '200':
+          description: Remorque mise à jour
+
+  /api/remorques/{id}/archive:
+    patch:
+      tags:
+        - Remorques
+      summary: Archiver une remorque (Admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Remorque archivée
+
+  /api/pneus:
+    get:
+      tags:
+        - Pneus
+      summary: Lister les pneus
+      responses:
+        '200':
+          description: Liste des pneus
+    post:
+      tags:
+        - Pneus
+      summary: Enregistrer un pneu (Admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - numeroSerie
+                - marque
+                - dimension
+                - seuilMaxKm
+              properties:
+                numeroSerie:
+                  type: string
+                  example: MICHELIN-987654
+                marque:
+                  type: string
+                  example: Michelin
+                dimension:
+                  type: string
+                  example: 315/80 R22.5
+                seuilMaxKm:
+                  type: number
+                  example: 80000
+                camion:
+                  type: string
+                position:
+                  type: string
+                  enum: [avant_gauche, avant_droit, arriere_gauche_externe, arriere_gauche_interne, arriere_droit_externe, arriere_droit_interne, secours, non_installe]
+      responses:
+        '201':
+          description: Pneu créé
+
+  /api/pneus/{id}/affecter:
+    put:
+      tags:
+        - Pneus
+      summary: Affecter ou déplacer un pneu (Admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                camionId:
+                  type: string
+                position:
+                  type: string
+      responses:
+        '200':
+          description: Affectation mise à jour
+        '400':
+          description: Position déjà occupée
+
+  /api/pneus/{id}/archive:
+    patch:
+      tags:
+        - Pneus
+      summary: Archiver un pneu (Admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Pneu archivé
+
+  /api/trajets:
+    get:
+      tags:
+        - Trajets
+      summary: Lister tous les trajets
+      parameters:
+        - name: statut
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Liste des trajets
+    post:
+      tags:
+        - Trajets
+      summary: Planifier un trajet avec contrôle anti-conflit (Admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - siteDepart
+                - siteArrivee
+                - marchandise
+                - dateDebut
+                - dateFin
+                - chauffeur
+                - camion
+              properties:
+                siteDepart:
+                  type: string
+                  example: Casablanca
+                siteArrivee:
+                  type: string
+                  example: Tanger Med
+                marchandise:
+                  type: string
+                  example: Pièces automobiles
+                dateDebut:
+                  type: string
+                  format: date-time
+                  example: '2026-10-15T08:00:00.000Z'
+                dateFin:
+                  type: string
+                  format: date-time
+                  example: '2026-10-16T18:00:00.000Z'
+                chauffeur:
+                  type: string
+                camion:
+                  type: string
+                remorque:
+                  type: string
+      responses:
+        '201':
+          description: Trajet planifié
+        '409':
+          description: Conflit de disponibilité (409 Conflict)
+
+  /api/trajets/{id}/assigner:
+    put:
+      tags:
+        - Trajets
+      summary: Réassigner des ressources à un trajet (Admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                chauffeur:
+                  type: string
+                camion:
+                  type: string
+                remorque:
+                  type: string
+      responses:
+        '200':
+          description: Trajet réassigné
+        '409':
+          description: Conflit de ressource
+
+  /api/trajets/{id}/statut:
+    patch:
+      tags:
+        - Trajets
+      summary: Mettre à jour le statut du trajet (démarrage, annulation)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - statut
+              properties:
+                statut:
+                  type: string
+                  enum: [en_cours, annule]
+                kmDepart:
+                  type: number
+                remarques:
+                  type: string
+      responses:
+        '200':
+          description: Statut mis à jour
+        '400':
+          description: Transition invalide
+
+  /api/trajets/{id}/cloture:
+    patch:
+      tags:
+        - Trajets
+      summary: Clôturer un trajet avec kilométrage d'arrivée et carburant
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - kmArrivee
+                - volumeGasoil
+              properties:
+                kmArrivee:
+                  type: number
+                  example: 50450
+                volumeGasoil:
+                  type: number
+                  example: 140
+                remarques:
+                  type: string
+      responses:
+        '200':
+          description: Trajet clôturé avec calcul de consommation
+        '400':
+          description: Kilométrage d'arrivée invalide
+
+  /api/chauffeur/trajets:
+    get:
+      tags:
+        - Espace Chauffeur
+      summary: Mes trajets assignés (Chauffeur connecté)
+      responses:
+        '200':
+          description: Liste de mes trajets
+        '403':
+          description: Réservé au rôle chauffeur
+
+  /api/chauffeur/trajets/{id}:
+    get:
+      tags:
+        - Espace Chauffeur
+      summary: Détails de mon trajet (Chauffeur connecté)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Détails du trajet
+        '403':
+          description: Trajet non assigné à ce chauffeur
+
+  /api/maintenance/regles:
+    get:
+      tags:
+        - Maintenance
+      summary: Lister les règles de maintenance (Admin)
+      responses:
+        '200':
+          description: Liste des règles
+    post:
+      tags:
+        - Maintenance
+      summary: Créer une règle de périodicité (Admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nom
+                - type
+                - seuilKm
+              properties:
+                nom:
+                  type: string
+                  example: Vidange moteur
+                type:
+                  type: string
+                  enum: [vidange, revision_technique, autre]
+                seuilKm:
+                  type: number
+                  example: 20000
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Règle créée
+
+  /api/maintenance/regles/{id}:
+    put:
+      tags:
+        - Maintenance
+      summary: Modifier une règle de maintenance (Admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                seuilKm:
+                  type: number
+                actif:
+                  type: boolean
+      responses:
+        '200':
+          description: Règle mise à jour
+
+  /api/maintenance/interventions:
+    get:
+      tags:
+        - Maintenance
+      summary: Historique des interventions (Admin)
+      responses:
+        '200':
+          description: Liste des interventions
+    post:
+      tags:
+        - Maintenance
+      summary: Enregistrer une intervention et réinitialiser le statut camion (Admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - camion
+                - regle
+              properties:
+                camion:
+                  type: string
+                regle:
+                  type: string
+                kilometrageIntervention:
+                  type: number
+                cout:
+                  type: number
+                  example: 1200
+                remarques:
+                  type: string
+      responses:
+        '201':
+          description: Intervention enregistrée
+
+  /api/rapports/consommation:
+    get:
+      tags:
+        - Rapports Analytiques
+      summary: Rapport global de consommation de carburant (Admin)
+      responses:
+        '200':
+          description: Rapport de consommation
+
+  /api/rapports/kilometrage:
+    get:
+      tags:
+        - Rapports Analytiques
+      summary: Rapport kilométrique par camion, remorque et chauffeur (Admin)
+      responses:
+        '200':
+          description: Rapport kilométrique
+
+  /api/rapports/maintenance:
+    get:
+      tags:
+        - Rapports Analytiques
+      summary: Rapport sur les alertes, véhicules immobilisés et coûts (Admin)
+      responses:
+        '200':
+          description: Rapport de maintenance
