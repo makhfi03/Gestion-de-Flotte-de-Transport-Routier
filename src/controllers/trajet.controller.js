@@ -100,6 +100,20 @@ class TrajetController {
             next(error);
         }
     }
+
+    async cloturer(req, res, next) {
+        try {
+            const trajet = await trajetService.cloturerTrajet(req.params.id, req.user, req.body);
+
+            return res.status(200).json({
+                status: 'success',
+                message: 'Trajet clôturé avec succès.',
+                data: trajet
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = new TrajetController();

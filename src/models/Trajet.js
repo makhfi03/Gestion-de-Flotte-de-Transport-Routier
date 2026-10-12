@@ -65,7 +65,26 @@ const trajetSchema = new mongoose.Schema({
         default: ''
     }
 }, {
-    timestamps: true
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+});
+
+trajetSchema.virtual('distance').get(function() {
+    if (this.kmDepart != null && this.kmArrivee != null) {
+        return Math.max(0, this.kmArrivee - this.kmDepart);
+    }
+    return null;
+});
+
+trajetSchema.virtual('consommationMoyenne').get(function() {
+    if (this.kmDepart != null && this.kmArrivee != null && this.volumeGasoil != null) {
+        const dist = this.kmArrivee - this.kmDepart;
+        if (dist > 0) {
+            return Number(((this.volumeGasoil / dist) * 100).toFixed(2));
+        }
+    }
+    return null;
 });
 
 module.exports = mongoose.model('Trajet', trajetSchema);

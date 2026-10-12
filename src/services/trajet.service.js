@@ -298,16 +298,9 @@ class TrajetService {
             }
             trajet.statut = 'annule';
         } else if (statut === 'termine') {
-            if (trajet.statut !== 'en_cours') {
-                const error = new Error('Transition invalide : le trajet doit être "en_cours" pour être terminé.');
-                error.statusCode = 400;
-                throw error;
-            }
-            trajet.statut = 'termine';
-            await Camion.findByIdAndUpdate(trajet.camion, { statut: 'disponible' });
-            if (trajet.remorque) {
-                await Remorque.findByIdAndUpdate(trajet.remorque, { statut: 'disponible' });
-            }
+            const error = new Error('Pour terminer un trajet, veuillez utiliser la clôture avec relevé kilométrique et carburant via l\'endpoint de clôture.');
+            error.statusCode = 400;
+            throw error;
         }
 
         if (remarques !== undefined) {
@@ -315,6 +308,69 @@ class TrajetService {
         }
 
         await trajet.save();
+        return this.getTrajetById(trajet._id);
+    }
+
+    async cloturerTrajet(trajetId, user, { kmArrivee, volumeGasoil, remarques }) {
+        const trajet = await Trajet.findById(trajetId);
+        if (!trajet) {
+            const error = new Error('Trajet introuvable.');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        const currentUserId = (user._id || user.id).toString();
+        if (user.role === 'chauffeur' && trajet.chauffeur.toString() !== currentUserId) {
+            const error = new Error('Accès refusé. Vous n\'êtes pas le chauffeur assigné à ce trajet.');
+            error.statusCode = 403;
+            throw error;
+        }
+
+        if (trajet.statut !== 'en_cours') {
+            const error = new Error(`Seul un trajet en cours peut être clôturé. Statut actuel : "${trajet.statut}".`);
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const departKm = trajet.kmDepart ?? 0;
+        if (kmArrivee < departKm) {
+            const error = new Error(`Le kilométrage d'arrivée (${kmArrivee} km) ne peut pas être inférieur au kilométrage de départ (${departKm} km).`);
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const distance = kmArrivee - departKm;
+
+        trajet.kmArrivee = kmArrivee;
+        trajet.volumeGasoil = volumeGasoil;
+        trajet.statut = 'termine';
+        if (remarques !== undefined) {
+            trajet.remarques = remarques;
+        }
+        await trajet.save();
+
+        // 1. Mise à jour du compteur et disponibilité du camion
+        await Camion.findByIdAndUpdate(trajet.camion, {
+            kilometrage: kmArrivee,
+            statut: 'disponible'
+        });
+
+        // 2. Libération de la remorque si présente
+        if (trajet.remorque) {
+            await Remorque.findByIdAndUpdate(trajet.remorque, {
+                statut: 'disponible'
+            });
+        }
+
+        // 3. Incrémentation de l'usure des pneus du camion (déclenche hook d'alerte si seuil atteint)
+        if (distance > 0) {
+            const pneus = await Pneu.find({ camion: trajet.camion });
+            for (const pneu of pneus) {
+                pneu.kmUsure = (pneu.kmUsure || 0) + distance;
+                await pneu.save();
+            }
+        }
+
         return this.getTrajetById(trajet._id);
     }
 }

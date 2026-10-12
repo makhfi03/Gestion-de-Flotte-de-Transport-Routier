@@ -64,8 +64,23 @@ const updateStatutTrajetSchema = Joi.object({
     remarques: Joi.string().trim().allow('').optional()
 });
 
+const cloturerTrajetSchema = Joi.object({
+    kmArrivee: Joi.number().min(0).required().messages({
+        'number.base': 'Le kilométrage d\'arrivée doit être un nombre.',
+        'number.min': 'Le kilométrage d\'arrivée ne peut pas être négatif.',
+        'any.required': 'Le kilométrage d\'arrivée est obligatoire.'
+    }),
+    volumeGasoil: Joi.number().min(0).required().messages({
+        'number.base': 'Le volume de gasoil doit être un nombre.',
+        'number.min': 'Le volume de gasoil ne peut pas être négatif.',
+        'any.required': 'Le volume de gasoil est obligatoire.'
+    }),
+    remarques: Joi.string().trim().allow('').optional()
+});
+
 module.exports = {
     createTrajetSchema,
     assignerTrajetSchema,
-    updateStatutTrajetSchema
+    updateStatutTrajetSchema,
+    cloturerTrajetSchema
 };
