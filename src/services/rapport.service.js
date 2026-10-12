@@ -1,6 +1,5 @@
 const Trajet = require('../models/Trajet');
 const Camion = require('../models/Camion');
-const Remorque = require('../models/Remorque');
 const Pneu = require('../models/Pneu');
 const MaintenanceIntervention = require('../models/MaintenanceIntervention');
 
@@ -65,13 +64,13 @@ const getRapportConsommation = async () => {
 
 const getRapportKilometrage = async () => {
     const camions = await Camion.find().select('matricule marque modele kilometrage statut');
-    const remorques = await Remorque.find().select('matricule type capaciteCharge statut');
 
     const trajetsTermines = await Trajet.find({ statut: 'termine' })
-        .populate('chauffeur', 'nom prenom email');
+        .populate('chauffeur', 'nom prenom email')
+        .populate('remorque', 'matricule type');
 
     const chauffeursMap = {};
-    const kmParRemorque = {};
+    const remorquesMap = {};
 
     for (const trajet of trajetsTermines) {
         const distance = Math.max(0, (trajet.kmArrivee || 0) - (trajet.kmDepart || 0));
@@ -95,29 +94,27 @@ const getRapportKilometrage = async () => {
         }
 
         if (trajet.remorque) {
-            const remorqueId = trajet.remorque.toString();
-            if (!kmParRemorque[remorqueId]) {
-                kmParRemorque[remorqueId] = { nombreTrajets: 0, kmTotal: 0 };
+            const remorqueId = trajet.remorque._id.toString();
+            if (!remorquesMap[remorqueId]) {
+                remorquesMap[remorqueId] = {
+                    remorque: {
+                        id: trajet.remorque._id,
+                        matricule: trajet.remorque.matricule,
+                        type: trajet.remorque.type
+                    },
+                    nombreTrajets: 0,
+                    kmTotal: 0
+                };
             }
-            kmParRemorque[remorqueId].nombreTrajets += 1;
-            kmParRemorque[remorqueId].kmTotal += distance;
+            remorquesMap[remorqueId].nombreTrajets += 1;
+            remorquesMap[remorqueId].kmTotal += distance;
         }
     }
 
-    const remorquesRapport = remorques.map((r) => {
-        const rId = r._id.toString();
-        const stats = kmParRemorque[rId] || { nombreTrajets: 0, kmTotal: 0 };
-        return {
-            remorque: r,
-            nombreTrajets: stats.nombreTrajets,
-            kmTotal: stats.kmTotal
-        };
-    });
-
     return {
         camions,
-        remorques: remorquesRapport,
-        chauffeurs: Object.values(chauffeursMap)
+        chauffeurs: Object.values(chauffeursMap),
+        remorques: Object.values(remorquesMap)
     };
 };
 
