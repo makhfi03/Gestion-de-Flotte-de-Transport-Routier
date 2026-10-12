@@ -4,6 +4,7 @@ const Camion = require('../models/Camion');
 const Remorque = require('../models/Remorque');
 const Pneu = require('../models/Pneu');
 const calculConsommationService = require('./calculConsommation.service');
+const maintenanceService = require('./maintenance.service');
 
 const verifyResourcesAvailability = async ({ chauffeurId, camionId, remorqueId, dateDebut, dateFin, excludeTrajetId = null }) => {
     const start = new Date(dateDebut);
@@ -361,6 +362,8 @@ const cloturerTrajet = async (trajetId, user, { kmArrivee, volumeGasoil, remarqu
             await pneu.save();
         }
     }
+
+    await maintenanceService.verifierAlertesCamion(trajet.camion);
 
     return getTrajetById(trajet._id);
 };

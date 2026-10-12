@@ -9,6 +9,7 @@ const remorqueRoutes = require('./routes/remorque.routes');
 const pneuRoutes = require('./routes/pneu.routes');
 const trajetRoutes = require('./routes/trajet.routes');
 const chauffeurTrajetRoutes = require('./routes/chauffeurTrajet.routes');
+const maintenanceRoutes = require('./routes/maintenance.routes');
 const errorHandler = require('./middlewares/error.middleware');
 
 const app = express();
@@ -28,6 +29,7 @@ app.use('/api/remorques', remorqueRoutes);
 app.use('/api/pneus', pneuRoutes);
 app.use('/api/trajets', trajetRoutes);
 app.use('/api/chauffeur/trajets', chauffeurTrajetRoutes);
+app.use('/api/maintenance', maintenanceRoutes);
 
 app.use(errorHandler);
 
