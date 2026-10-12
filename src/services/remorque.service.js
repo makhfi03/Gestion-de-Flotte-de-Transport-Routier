@@ -1,101 +1,104 @@
 const Remorque = require('../models/Remorque');
 
-class RemorqueService {
+const createRemorque = async (data) => {
+    const matriculeUpper = data.matricule.toUpperCase().trim();
 
-    async createRemorque(data) {
-        const matriculeUpper = data.matricule.toUpperCase().trim();
-
-        const existingRemorque = await Remorque.findOne({ matricule: matriculeUpper });
-        if (existingRemorque) {
-            const error = new Error('Ce matricule de remorque existe déjà.');
-            error.statusCode = 400;
-            throw error;
-        }
-
-        const remorque = await Remorque.create({
-            ...data,
-            matricule: matriculeUpper
-        });
-
-        return remorque;
+    const existingRemorque = await Remorque.findOne({ matricule: matriculeUpper });
+    if (existingRemorque) {
+        const error = new Error('Ce matricule de remorque existe déjà.');
+        error.statusCode = 400;
+        throw error;
     }
 
-    async getAllRemorques(query = {}) {
-        const filter = {};
+    const remorque = await Remorque.create({
+        ...data,
+        matricule: matriculeUpper
+    });
 
-        if (query.statut) {
-            filter.statut = query.statut;
-        }
+    return remorque;
+};
 
-        if (query.type) {
-            filter.type = query.type.toLowerCase().trim();
-        }
+const getAllRemorques = async (query = {}) => {
+    const filter = {};
 
-        if (query.search) {
-            filter.matricule = new RegExp(query.search.trim(), 'i');
-        }
-
-        const page = parseInt(query.page, 10) || 1;
-        const limit = parseInt(query.limit, 10) || 10;
-        const skip = (page - 1) * limit;
-
-        const total = await Remorque.countDocuments(filter);
-        const remorques = await Remorque.find(filter)
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit);
-
-        return {
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            remorques
-        };
+    if (query.statut) {
+        filter.statut = query.statut;
     }
 
-    async getRemorqueById(id) {
-        const remorque = await Remorque.findById(id);
-
-        if (!remorque) {
-            const error = new Error('Remorque introuvable.');
-            error.statusCode = 404;
-            throw error;
-        }
-
-        return remorque;
+    if (query.type) {
+        filter.type = query.type.toLowerCase().trim();
     }
 
-    async updateRemorque(id, data) {
-        const remorque = await Remorque.findByIdAndUpdate(
-            id,
-            data,
-            { returnDocument: 'after', runValidators: true }
-        );
-
-        if (!remorque) {
-            const error = new Error('Remorque introuvable.');
-            error.statusCode = 404;
-            throw error;
-        }
-
-        return remorque;
+    if (query.search) {
+        filter.matricule = new RegExp(query.search.trim(), 'i');
     }
 
-    async archiveRemorque(id) {
-        const remorque = await Remorque.findByIdAndUpdate(
-            id,
-            { statut: 'archive' },
-            { returnDocument: 'after', runValidators: true }
-        );
+    const page = parseInt(query.page, 10) || 1;
+    const limit = parseInt(query.limit, 10) || 10;
+    const skip = (page - 1) * limit;
 
-        if (!remorque) {
-            const error = new Error('Remorque introuvable.');
-            error.statusCode = 404;
-            throw error;
-        }
+    const total = await Remorque.countDocuments(filter);
+    const remorques = await Remorque.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
 
-        return remorque;
+    return {
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+        remorques
+    };
+};
+
+const getRemorqueById = async (id) => {
+    const remorque = await Remorque.findById(id);
+
+    if (!remorque) {
+        const error = new Error('Remorque introuvable.');
+        error.statusCode = 404;
+        throw error;
     }
-}
 
-module.exports = new RemorqueService();
+    return remorque;
+};
+
+const updateRemorque = async (id, data) => {
+    const remorque = await Remorque.findByIdAndUpdate(
+        id,
+        data,
+        { returnDocument: 'after', runValidators: true }
+    );
+
+    if (!remorque) {
+        const error = new Error('Remorque introuvable.');
+        error.statusCode = 404;
+        throw error;
+    }
+
+    return remorque;
+};
+
+const archiveRemorque = async (id) => {
+    const remorque = await Remorque.findByIdAndUpdate(
+        id,
+        { statut: 'archive' },
+        { returnDocument: 'after', runValidators: true }
+    );
+
+    if (!remorque) {
+        const error = new Error('Remorque introuvable.');
+        error.statusCode = 404;
+        throw error;
+    }
+
+    return remorque;
+};
+
+module.exports = {
+    createRemorque,
+    getAllRemorques,
+    getRemorqueById,
+    updateRemorque,
+    archiveRemorque
+};
