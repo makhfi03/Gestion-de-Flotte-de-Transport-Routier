@@ -27,6 +27,11 @@ const camionSchema = new mongoose.Schema({
         type: String,
         enum: ['disponible', 'en_mission', 'maintenance', 'archive'],
         default: 'disponible'
+    },
+    consommationTotaleCarburant: {
+        type: Number,
+        default: 0,
+        min: [0, 'La consommation totale ne peut pas être négative.']
     }
 }, {
     timestamps: true

@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Camion = require('../models/Camion');
 const Remorque = require('../models/Remorque');
 const Pneu = require('../models/Pneu');
+const calculConsommationService = require('./calculConsommation.service');
 
 const verifyResourcesAvailability = async ({ chauffeurId, camionId, remorqueId, dateDebut, dateFin, excludeTrajetId = null }) => {
     const start = new Date(dateDebut);
@@ -331,13 +332,7 @@ const cloturerTrajet = async (trajetId, user, { kmArrivee, volumeGasoil, remarqu
     }
 
     const departKm = trajet.kmDepart ?? 0;
-    if (kmArrivee < departKm) {
-        const error = new Error(`Le kilométrage d'arrivée (${kmArrivee} km) ne peut pas être inférieur au kilométrage de départ (${departKm} km).`);
-        error.statusCode = 400;
-        throw error;
-    }
-
-    const distance = kmArrivee - departKm;
+    const { distanceKm } = calculConsommationService.calculerMetriquesTrajet(departKm, kmArrivee, volumeGasoil);
 
     trajet.kmArrivee = kmArrivee;
     trajet.volumeGasoil = volumeGasoil;
@@ -349,7 +344,8 @@ const cloturerTrajet = async (trajetId, user, { kmArrivee, volumeGasoil, remarqu
 
     await Camion.findByIdAndUpdate(trajet.camion, {
         kilometrage: kmArrivee,
-        statut: 'disponible'
+        statut: 'disponible',
+        $inc: { consommationTotaleCarburant: volumeGasoil }
     });
 
     if (trajet.remorque) {
@@ -358,10 +354,10 @@ const cloturerTrajet = async (trajetId, user, { kmArrivee, volumeGasoil, remarqu
         });
     }
 
-    if (distance > 0) {
+    if (distanceKm > 0) {
         const pneus = await Pneu.find({ camion: trajet.camion });
         for (const pneu of pneus) {
-            pneu.kmUsure = (pneu.kmUsure || 0) + distance;
+            pneu.kmUsure = (pneu.kmUsure || 0) + distanceKm;
             await pneu.save();
         }
     }
