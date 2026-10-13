@@ -7,7 +7,6 @@ const seedUsers = async () => {
         await mongoose.connect(process.env.MONGO_URI);
         console.log('Connecté à MongoDB pour le seed...');
 
-        // Nettoyer les utilisateurs existants pour repartir sur une base propre
         await User.deleteMany({});
 
         const users = [
