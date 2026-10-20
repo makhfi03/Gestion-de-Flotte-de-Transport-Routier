@@ -5,15 +5,9 @@ const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 
-const authRoutes = require('./routes/auth.routes');
-const chauffeurRoutes = require('./routes/chauffeur.routes');
-const camionRoutes = require('./routes/camion.routes');
-const remorqueRoutes = require('./routes/remorque.routes');
-const pneuRoutes = require('./routes/pneu.routes');
-const trajetRoutes = require('./routes/trajet.routes');
-const chauffeurTrajetRoutes = require('./routes/chauffeurTrajet.routes');
-const maintenanceRoutes = require('./routes/maintenance.routes');
-const rapportRoutes = require('./routes/rapport.routes');
+const apiGovernance = require('./middlewares/apiGovernance.middleware');
+const v1Routes = require('./routes/v1');
+const v2Routes = require('./routes/v2');
 const errorHandler = require('./middlewares/error.middleware');
 
 const swaggerDocument = YAML.load(path.join(__dirname, 'docs/swagger.yaml'));
@@ -24,21 +18,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use(apiGovernance);
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-app.get('/api/health', (req, res) => {
-    res.status(200).json({ status: 'success', message: 'API Gestion de Flotte opérationnelle' });
-});
-
-app.use('/api/auth', authRoutes);
-app.use('/api/chauffeurs', chauffeurRoutes);
-app.use('/api/camions', camionRoutes);
-app.use('/api/remorques', remorqueRoutes);
-app.use('/api/pneus', pneuRoutes);
-app.use('/api/trajets', trajetRoutes);
-app.use('/api/chauffeur/trajets', chauffeurTrajetRoutes);
-app.use('/api/maintenance', maintenanceRoutes);
-app.use('/api/rapports', rapportRoutes);
+app.use('/api/v1', v1Routes);
+app.use('/api/v2', v2Routes);
+app.use('/api', v1Routes);
 
 app.use(errorHandler);
 
