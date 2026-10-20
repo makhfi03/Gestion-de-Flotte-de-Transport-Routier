@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 
+const { authLimiter } = require('../../middlewares/rateLimiter.middleware');
+
 const authRoutes = require('../auth.routes');
 const chauffeurRoutes = require('../chauffeur.routes');
 const camionRoutes = require('../camion.routes');
@@ -15,7 +17,7 @@ router.get('/health', (req, res) => {
     res.status(200).json({ status: 'success', message: 'API v1 opérationnelle' });
 });
 
-router.use('/auth', authRoutes);
+router.use('/auth', authLimiter, authRoutes);
 router.use('/chauffeurs', chauffeurRoutes);
 router.use('/camions', camionRoutes);
 router.use('/remorques', remorqueRoutes);
