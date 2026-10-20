@@ -30,6 +30,7 @@ const getStore = (prefix) => {
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 10,
+    validate: { singleCount: false },
     store: getStore('rl:auth:'),
     message: {
         status: 'error',
@@ -41,6 +42,7 @@ const authLimiter = rateLimit({
 const standardLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 120,
+    validate: { singleCount: false },
     store: getStore('rl:std:'),
     message: {
         status: 'error',
@@ -52,6 +54,7 @@ const standardLimiter = rateLimit({
 const analyticsLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 20,
+    validate: { singleCount: false },
     store: getStore('rl:analytics:'),
     message: {
         status: 'error',
