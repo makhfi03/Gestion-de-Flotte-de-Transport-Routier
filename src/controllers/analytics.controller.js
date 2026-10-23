@@ -1,4 +1,5 @@
 const analyticsService = require('../services/analytics.service');
+const tiresAnalyticsService = require('../services/tiresAnalytics.service');
 
 const getEcoPerformance = async (req, res, next) => {
     try {
@@ -12,6 +13,19 @@ const getEcoPerformance = async (req, res, next) => {
     }
 };
 
+const getTiresHealthMatrix = async (req, res, next) => {
+    try {
+        const data = await tiresAnalyticsService.getTiresHealthMatrix();
+        res.status(200).json({
+            status: 'success',
+            data
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
-    getEcoPerformance
+    getEcoPerformance,
+    getTiresHealthMatrix
 };
