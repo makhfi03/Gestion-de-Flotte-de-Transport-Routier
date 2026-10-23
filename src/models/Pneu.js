@@ -39,8 +39,13 @@ const pneuSchema = new mongoose.Schema({
     },
     seuilMaxKm: {
         type: Number,
-        required: [true, 'Le seuil kilométrique maximal est obligatoire.'],
-        min: [1000, 'Le seuil kilométrique doit être d’au moins 1000 km.']
+        default: 80000,
+        min: [0, 'Le seuil kilométrique ne peut pas être négatif.']
+    },
+    profondeurSculpture: {
+        type: Number,
+        default: 8,
+        min: [0, 'La profondeur ne peut pas être négative.']
     },
     camion: {
         type: mongoose.Schema.Types.ObjectId,
